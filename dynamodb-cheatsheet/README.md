@@ -34,7 +34,6 @@ Amazon DynamoDB is a fully managed NoSQL database service that provides fast and
 - **Primary Key**: Unique key to identify items.
   - **Partition Key**
   - **Partition + Sort Key**
-
 ---
 
 ## Data Types
@@ -45,24 +44,6 @@ Amazon DynamoDB is a fully managed NoSQL database service that provides fast and
 
 ---
 
-## Read & Write Capacity Units
-
-### On-Demand Mode
-- Automatically scales based on traffic.
-
-### Provisioned Mode
-- You specify the **Read Capacity Units (RCU)** and **Write Capacity Units (WCU)**.
-- **1 RCU** = one strongly consistent read per second for an item up to 4 KB.
-- **1 WCU** = one write per second for an item up to 1 KB.
-
-**Example**: To support 100 reads/sec and 50 writes/sec for 4 KB items:
-```bash
-RCU = 100
-WCU = 50
-```
-
----
-
 ## Basic Operations with Node.js
 
 Install SDK:
@@ -70,7 +51,7 @@ Install SDK:
 npm install aws-sdk
 ```
 
-### Create Table
+### [Create Table](./examples/create-table.js)
 ```js
 const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB();
@@ -84,6 +65,50 @@ const params = {
 
 dynamodb.createTable(params).promise();
 ```
+
+- `TableName`: the name of the table
+- `KeySchema`: Contains either `Primary key` or a `composite key (Primary Key + Sort Key)`
+  - `Primary Key (HASH)`: It is Mandatory Field and `KeyType` `HASH` is represented for primary key
+  - `Sort Key (RANGE)`: It is optional. This enables multiple `Primary Key` exists in a system with unique `Sort Key` and as name suggest it allows to sort data based on Primary + Sort (Ascending By Default). `KeyType` `RANGE` is used for Sort key
+- `AttributeDefinitions`: It Defines the type of Data types for Primary or secondary keys 
+  - Attribute Type: We can only have 3 types of attribute types 
+    - S -> String
+    - N -> Number
+    - B -> Binary 
+
+### Read & Write Capacity Units
+
+- ReadCapacityUnits (RCUs): Number of strongly consistent reads per second of up to 4 KB each.
+  - Eventually consistent reads consume 0.5 RCUs.
+
+- WriteCapacityUnits (WCUs): Number of writes per second for items up to 1 KB.
+
+#### On-Demand Mode
+- Automatically scales based on traffic, No need to set capacity.
+- Ideal for unpredictable workloads.
+
+#### Provisioned Mode
+- You specify the **Read Capacity Units (RCU)** and **Write Capacity Units (WCU)**.
+  - **1 RCU** = one strongly consistent read per second for an item up to 4 KB.
+  - **1 WCU** = one write per second for an item up to 1 KB.
+- Cheaper when you know your traffic.
+
+
+#### Pricing Tips
+
+- Reads (RCU): $0.25 per million (approx.)
+
+- Writes (WCU): $1.25 per million (approx.)
+
+Use Batch operations to reduce cost.
+Avoid Scan in large tables.
+
+**Example**: To support 100 reads/sec and 50 writes/sec for 4 KB items:
+```bash
+RCU = 100
+WCU = 50
+```
+---
 
 ### Put Item
 ```js
@@ -203,5 +228,14 @@ dynamodb-cheatsheet/
 
 ---
 
-Need help generating `examples/` code files too? Let me know! 🚀
 
+### 
+
+```js
+const params = {
+  TableName: 'Users',
+  KeySchema: [{ AttributeName: 'userId', KeyType: 'HASH' }],
+  AttributeDefinitions: [{ AttributeName: 'userId', AttributeType: 'S' }],
+  ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 }
+};
+```
