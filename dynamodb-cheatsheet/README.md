@@ -1,8 +1,8 @@
-# 🚀 DynamoDB Full Cheat Sheet (Beginner to Advanced)
+# DynamoDB Full Cheat Sheet (Beginner to Advanced)
 
 This cheat sheet is designed to give you everything you need to understand and work with DynamoDB from the basics to advanced concepts using Node.js.
 
-> ✅ Covers: Core Concepts, Indexing, Filters, Capacity Units, Best Practices, and Working Examples.
+> Covers: Core Concepts, Indexing, Filters, Capacity Units, Best Practices, and Working Examples.
 
 ---
 
@@ -38,10 +38,48 @@ Amazon DynamoDB is a fully managed NoSQL database service that provides fast and
 
 ## Data Types
 
-- **Scalar Types**: `String`, `Number`, `Binary`, `Boolean`, `Null`
-- **Document Types**: `List`, `Map`
-- **Set Types**: `String Set`, `Number Set`, `Binary Set`
+## 🧠 DynamoDB Data Type Reference
 
+| Type             | Code | Description                                 |
+|------------------|------|---------------------------------------------|
+| **String**       | `S`  | Any UTF-8 string                            |
+| **Number**       | `N`  | Stored as string, supports numeric values   |
+| **Binary**       | `B`  | Base64-encoded binary data                  |
+| **Boolean**      | `BOOL` | `true` or `false`                         |
+| **Null**         | `NULL` | Represents an empty value (`null`)       |
+| **String Set**   | `SS` | A set of strings                           |
+| **Number Set**   | `NS` | A set of numbers                           |
+| **Binary Set**   | `BS` | A set of base64-encoded binary values      |
+| **List**         | `L`  | Ordered list of elements                   |
+| **Map**          | `M`  | Unordered key-value pairs (like JSON object) |
+
+
+```json
+{
+  "id": { "S": "user#123" },                                // String (S)
+  "age": { "N": "30" },                                     // Number (N)
+  "isActive": { "BOOL": true },                             // Boolean (BOOL)
+  "profileImage": { "B": "U3RyaW5nIGJhc2U2NCBlbmNvZGVk" },  // Binary (B)
+  "tags": { "SS": ["developer", "blogger"] },               // String Set (SS)
+  "scores": { "NS": ["90", "85", "88"] },                   // Number Set (NS)
+  "certificates": { "BS": ["Q2VydDE=", "Q2VydDI="] },       // Binary Set (BS)
+  "address": {                                              // Map (M)
+    "M": {
+      "city": { "S": "Bangalore" },
+      "pin": { "N": "560001" }
+    }
+  },
+  "hobbies": {                                              // List (L)
+    "L": [
+      { "S": "Reading" },
+      { "S": "Gaming" },
+      { "S": "Traveling" }
+    ]
+  },
+  "createdAt": { "S": "2024-04-11T09:00:00Z" },             // ISO8601 date string (custom convention)
+  "nullableField": { "NULL": true }                         // Null (NULL)
+}
+```
 ---
 
 ## Basic Operations with Node.js
@@ -128,6 +166,27 @@ docClient.put(params).promise();
 const params = { TableName: 'Users', Key: { userId: '123' } };
 docClient.get(params).promise();
 ```
+### [Update Item](./examples/update-item.js)
+```js
+const params = {
+  TableName: 'Users',
+  Key: { userId: 'u1' },
+  UpdateExpression: 'set age = :a',
+  ExpressionAttributeValues: { ':a': 31 },
+  ReturnValues: 'UPDATED_NEW'
+};
+docClient.update(params, console.log);
+```
+
+### [Delete Item](./examples/delete-item.js)
+
+const params = {
+  TableName: 'Users',
+  Key: { userId: 'u1' }
+};
+docClient.delete(params, console.log);
+
+
 
 ---
 
@@ -222,6 +281,7 @@ docClient.scan(params).promise();
 
 ---
 
+
 ## Summary Table
 
 | Operation     | Use-case                  | Function                |
@@ -258,13 +318,87 @@ dynamodb-cheatsheet/
 ---
 
 
-### 
+## DynamoDB Transactions
+
+DynamoDB supports **ACID transactions**, which means operations are **Atomic, Consistent, Isolated, and Durable** — just like in traditional databases.
+
+> Transactions allow you to **group multiple reads and writes** into a single all-or-nothing operation.
+
+---
+
+### Supported Transaction APIs
+
+| API Name                 | Description                                            |
+|--------------------------|--------------------------------------------------------|
+| `transactWriteItems`     | Perform **up to 100 write operations** in one call     |
+| `transactGetItems`       | Perform **up to 100 read operations** in one call      |
+
+---
+
+##  `transactWriteItems` – Example
 
 ```js
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, TransactWriteCommand } = require("@aws-sdk/lib-dynamodb");
+
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({ region: "us-east-1" }));
+
 const params = {
-  TableName: 'Users',
-  KeySchema: [{ AttributeName: 'userId', KeyType: 'HASH' }],
-  AttributeDefinitions: [{ AttributeName: 'userId', AttributeType: 'S' }],
-  ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 }
+  TransactItems: [
+    {
+      Put: {
+        TableName: "Users",
+        Item: {
+          userId: "user#123",
+          name: "Alice",
+          balance: 500
+        }
+      }
+    },
+    {
+      Update: {
+        TableName: "Users",
+        Key: { userId: "acc#xyz" },
+        UpdateExpression: "SET balance = balance - :amount",
+        ExpressionAttributeValues: {
+          ":amount": 100
+        },
+        ConditionExpression: "balance >= :amount"
+      }
+    }
+  ]
 };
+
+await client.send(new TransactWriteCommand(params));
+```
+
+- In the above example initially it will create a user with 500 balance.
+- In second one it  gets an user checks if balance is greater than or equal to 100, If success
+  - Transaction is successful and deducts the 100 from balance
+  - If fails then reverts insert operation
+
+## `transactGetItems` - Example
+
+```js
+const { TransactGetCommand } = require("@aws-sdk/lib-dynamodb");
+
+const params = {
+  TransactItems: [
+    {
+      Get: {
+        TableName: "Users",
+        Key: { userId: "user#123" }
+      }
+    },
+    {
+      Get: {
+        TableName: "Accounts",
+        Key: { accountId: "acc#xyz" }
+      }
+    }
+  ]
+};
+
+const result = await client.send(new TransactGetCommand(params));
+console.log(result.Responses);
 ```
