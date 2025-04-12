@@ -108,9 +108,12 @@ Avoid Scan in large tables.
 RCU = 100
 WCU = 50
 ```
----
 
-### Put Item
+`note: While creating tables we specify only HASH and RANGE  (Primary and/or Sort)`
+---
+## CURD Operations
+
+### [Insert Items](./examples/put-item.js)
 ```js
 const docClient = new AWS.DynamoDB.DocumentClient();
 const params = {
@@ -120,7 +123,7 @@ const params = {
 docClient.put(params).promise();
 ```
 
-### Get Item
+### [Get Item](./examples/get-item.js)
 ```js
 const params = { TableName: 'Users', Key: { userId: '123' } };
 docClient.get(params).promise();
@@ -130,7 +133,8 @@ docClient.get(params).promise();
 
 ## Indexing in DynamoDB
 
-### 1. Global Secondary Index (GSI)
+### [1. Global Secondary Index (GSI)](./examples/gsi-query.js
+') 
 - Query across **any attribute**.
 - Doesn't need to be part of primary key.
 - Has separate read/write capacity.
@@ -146,7 +150,7 @@ const params = {
 docClient.query(params).promise();
 ```
 
-### 2. Local Secondary Index (LSI)
+### [2. Local Secondary Index (LSI)](./examples/lsi-query.js)
 - Based on same partition key, but different sort key.
 - Must be defined during table creation.
 
@@ -179,8 +183,33 @@ const params = {
 };
 docClient.scan(params).promise();
 ```
-> Filters are applied **after** fetching data. They **don’t reduce RCU**.
 
+## DynamoDB `FilterExpression` 
+
+| Expression Type        | Syntax Example | Explanation |
+|------------------------|----------------|-------------|
+| **Equals (`=`)** | `status = :statusVal`<br>`{ ":statusVal": "active" }` | Returns items where `status` is `"active"` |
+| **Not Equals (`<>`)** | `status <> :statusVal`<br>`{ ":statusVal": "inactive" }` | Returns items where `status` is **not** `"inactive"` |
+| **Greater Than (`>`)** | `age > :minAge`<br>`{ ":minAge": 18 }` | Returns items where `age` is greater than 18 |
+| **Greater Than or Equal (`>=`)** | `age >= :minAge`<br>`{ ":minAge": 21 }` | Items where `age` is 21 or more |
+| **Less Than (`<`)** | `price < :maxPrice`<br>`{ ":maxPrice": 100 }` | Items where `price` is less than 100 |
+| **Less Than or Equal (`<=`)** | `price <= :maxPrice`<br>`{ ":maxPrice": 100 }` | Items where `price` is less than or equal to 100 |
+| **Begins With** | `begins_with(name, :prefix)`<br>`{ ":prefix": "A" }` | Items where `name` starts with "A" |
+| **Contains** | `contains(tags, :tag)`<br>`{ ":tag": "featured" }` | Works with lists and strings; returns items containing `"featured"` |
+| **Between** | `price BETWEEN :low AND :high`<br>`{ ":low": 100, ":high": 500 }` | Items where `price` is between 100 and 500 inclusive |
+| **AND / OR** | `status = :status AND age >= :minAge`<br>`{ ":status": "active", ":minAge": 21 }` | Combines multiple filters |
+| **Simulate IN (OR)** | `status = :val1 OR status = :val2`<br>`{ ":val1": "pending", ":val2": "approved" }` | Simulates `IN ("pending", "approved")` |
+| **Attribute Exists** | `attribute_exists(email)` | Items where `email` field exists |
+| **Attribute Not Exists** | `attribute_not_exists(deletedAt)` | Filters out soft-deleted records (where `deletedAt` is missing) |
+| **Attribute Type** | `attribute_type(score, :type)`<br>`{ ":type": "N" }` | Checks if `score` is of type **Number** |
+
+---
+
+## ⚠️ Notes
+
+- `FilterExpression` filters **after data is fetched** (post-read), so RCUs are still consumed.
+- Combine with `KeyConditionExpression` when using `query` for more efficient results.
+- Works for both `Query` and `Scan` operations.
 ---
 
 ## Best Practices
