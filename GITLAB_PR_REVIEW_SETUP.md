@@ -9,6 +9,7 @@ This N8N workflow automatically reviews GitLab merge requests using AI (Claude o
 - ✅ Handles large PRs by chunking code (avoids token limits)
 - ✅ Supports multiple LLM providers (Claude, ChatGPT/OpenAI)
 - ✅ Posts comprehensive review comments back to GitLab
+- ✅ **Customizable review rules** - Use your own code review guidelines
 - ✅ Reviews focus on: bugs, security, performance, code quality, best practices
 
 ## Prerequisites
@@ -61,7 +62,51 @@ This N8N workflow automatically reviews GitLab merge requests using AI (Claude o
 4. Save the credential
 5. In the workflow, assign this credential to the **"ChatGPT Code Review"** node
 
-### Step 3: Configure the Workflow
+### Step 3: Configure Code Review Rules
+
+The workflow uses a customizable rules file (`code-review-rules.md`) that defines what the AI should look for during code reviews.
+
+#### Option A: Use Rules from GitHub (Recommended)
+
+1. Upload `code-review-rules.md` to your GitHub repository
+2. Get the raw URL:
+   - Navigate to the file on GitHub
+   - Click **Raw** button
+   - Copy the URL (e.g., `https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-REPO/main/code-review-rules.md`)
+3. In N8N workflow, click on **"Load Review Rules"** node
+4. Update the **URL** parameter with your raw GitHub URL
+5. Save the workflow
+
+#### Option B: Use Local File or HTTP Endpoint
+
+1. Host `code-review-rules.md` on any HTTP server
+2. Update the URL in **"Load Review Rules"** node
+3. Ensure the URL is publicly accessible or configure authentication
+
+#### Option C: Embed Rules Directly (No External URL)
+
+1. Delete the **"Load Review Rules"** and **"Store Rules"** nodes
+2. Open the **"Prepare Code for Review"** node
+3. Modify the JavaScript code to include your rules directly:
+   ```javascript
+   const reviewRules = `
+   [Paste your review rules here]
+   `;
+   ```
+
+#### Customize Review Rules
+
+Edit `code-review-rules.md` to match your team's standards:
+
+1. **Severity Levels**: Define what constitutes CRITICAL, IMPORTANT, or SUGGESTION
+2. **Language-Specific Rules**: Add rules for Python, JavaScript, Java, Go, etc.
+3. **Project-Specific Rules**: Add custom requirements for your codebase
+4. **Review Format**: Define how reviews should be structured
+5. **Exclusions**: Specify what should NOT be flagged
+
+See `code-review-rules.md` for the full template with detailed examples.
+
+### Step 4: Configure the Workflow
 
 1. Open the imported workflow in N8N
 2. Click on **"GitLab MR Webhook"** node
@@ -71,19 +116,19 @@ This N8N workflow automatically reviews GitLab merge requests using AI (Claude o
    - **Option B**: Use only ChatGPT - Delete the "Claude Code Review" node
    - **Option C**: Use both - Keep both nodes (will run in parallel)
 
-### Step 4: Configure GitLab Webhook
+### Step 6: Configure GitLab Webhook
 
 1. Go to your GitLab project
 2. Navigate to **Settings** → **Webhooks**
 3. Add new webhook:
-   - **URL**: Paste the N8N webhook URL from Step 3
+   - **URL**: Paste the N8N webhook URL from Step 4
    - **Secret Token**: (optional but recommended)
    - **Trigger**: Check **Merge request events**
    - **Enable SSL verification**: Check if using HTTPS
 4. Click **Add webhook**
 5. Test the webhook with **Test** → **Merge Request events**
 
-### Step 5: Activate the Workflow
+### Step 7: Activate the Workflow
 
 1. In N8N, click **Active** toggle to enable the workflow
 2. The workflow is now live and listening for GitLab MR events
@@ -93,20 +138,27 @@ This N8N workflow automatically reviews GitLab merge requests using AI (Claude o
 ### Workflow Flow
 
 ```
-GitLab MR Event → Webhook Trigger → Filter Events → Get MR Diff
-                                                           ↓
-                                               Prepare Code for Review
-                                                           ↓
-                                    ┌──────────────────────┴──────────────────────┐
-                                    ↓                                              ↓
-                            Claude Review                                  ChatGPT Review
-                                    └──────────────────────┬──────────────────────┘
-                                                           ↓
-                                                  Combine Reviews
-                                                           ↓
-                                              Post Comment to GitLab MR
-                                                           ↓
-                                                   Webhook Response
+GitLab MR Event → Webhook Trigger → Filter Events
+                                          ↓
+                    ┌─────────────────────┴─────────────────────┐
+                    ↓                                             ↓
+          Load Review Rules                                Get MR Diff
+                    ↓                                             ↓
+              Store Rules                                         ↓
+                    └─────────────────────┬─────────────────────┘
+                                          ↓
+                              Prepare Code for Review
+                                          ↓
+                    ┌─────────────────────┴─────────────────────┐
+                    ↓                                             ↓
+            Claude Review                                 ChatGPT Review
+                    └─────────────────────┬─────────────────────┘
+                                          ↓
+                                  Combine Reviews
+                                          ↓
+                              Post Comment to GitLab MR
+                                          ↓
+                                   Webhook Response
 ```
 
 ### Code Chunking for Large PRs
@@ -128,6 +180,58 @@ The LLM reviews code for:
 5. **Best Practices**: Design patterns, SOLID principles, maintainability
 
 ## Configuration Options
+
+### Customizing Code Review Rules
+
+The workflow uses `code-review-rules.md` to define review criteria. This file is loaded at runtime, allowing you to update review guidelines without modifying the workflow.
+
+#### Key Sections in code-review-rules.md
+
+**1. Severity Levels**
+- **CRITICAL (🔴)**: Security vulnerabilities, data loss risks, critical bugs
+- **IMPORTANT (🟡)**: Performance issues, code quality problems
+- **SUGGESTION (🟢)**: Best practice recommendations, minor optimizations
+
+**2. Language-Specific Rules**
+The template includes detailed rules for:
+- JavaScript/TypeScript (async/await, type safety, React hooks)
+- Python (PEP 8, type hints, exception handling)
+- Java (null safety, generics, streams)
+- Go (error handling, goroutines, context)
+- Django, React, and more
+
+**3. Project-Specific Customization**
+Add your own rules to the "Custom Rules for This Project" section:
+```markdown
+### Custom Rules for This Project
+
+- All API responses must follow the standard envelope format
+- Database migrations must be reviewed by a DBA
+- All user-facing strings must support i18n
+- Error messages must not expose internal implementation details
+```
+
+**4. Review Output Format**
+Define how the AI should structure its feedback - the template includes a specific format with:
+- Overall assessment
+- Critical/Important/Suggestion sections
+- Security and performance analysis
+- Detailed file-by-file reviews
+
+#### Benefits of External Rules File
+
+1. **Version Control**: Track changes to review standards over time
+2. **Team Collaboration**: Team members can propose rule changes via PRs
+3. **No Workflow Editing**: Update rules without touching the N8N workflow
+4. **Consistency**: Same rules applied across all reviews
+5. **Documentation**: Rules file serves as team coding standards documentation
+
+#### Updating Rules
+
+To update review rules:
+1. Edit `code-review-rules.md` in your repository
+2. Commit and push changes
+3. Next MR review will automatically use updated rules (no workflow restart needed)
 
 ### Adjust Chunk Size
 
