@@ -1,0 +1,234 @@
+{
+  "name": "GitLab PR Code Review - TEST WORKFLOW",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gitlab-mr-webhook-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-test",
+      "name": "Test Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "webhookId": "gitlab-mr-webhook-test",
+      "notes": "Test webhook endpoint - send any JSON payload here"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "test-data",
+              "name": "webhookData",
+              "value": "={{JSON.stringify($json, null, 2)}}",
+              "type": "string"
+            },
+            {
+              "id": "test-timestamp",
+              "name": "timestamp",
+              "value": "={{new Date().toISOString()}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "prepare-test",
+      "name": "Prepare Test Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [450, 300],
+      "notes": "Prepares the received data for AI testing"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "test-prompt",
+              "name": "aiPrompt",
+              "value": "You are a test AI assistant. Please analyze the following webhook data and respond with:\n\n1. A greeting\n2. Summary of the data received\n3. Confirmation that the integration is working\n\nWebhook Data:\n{{$json.webhookData}}\n\nReceived at: {{$json.timestamp}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-prompt",
+      "name": "Create AI Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "={{$json.aiPrompt}}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.7
+        }
+      },
+      "id": "openai-test",
+      "name": "OpenAI (ChatGPT)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [850, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      },
+      "notes": "Test with OpenAI/ChatGPT"
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "text": "={{$json.aiPrompt}}",
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.7
+        }
+      },
+      "id": "claude-test",
+      "name": "Claude (Anthropic)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1,
+      "position": [850, 400],
+      "credentials": {
+        "anthropicApi": {
+          "id": "anthropic-credentials",
+          "name": "Anthropic API"
+        }
+      },
+      "notes": "Test with Anthropic Claude"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect responses from AI models\nconst items = $input.all();\n\nconst responses = [];\n\nfor (const item of items) {\n  const aiResponse = item.json.response?.output || item.json.output || item.json.message?.content || 'No response';\n  const modelUsed = item.json.model || 'Unknown model';\n  \n  responses.push({\n    model: modelUsed,\n    response: aiResponse\n  });\n}\n\nconst result = {\n  status: 'success',\n  message: 'AI integration test completed successfully!',\n  timestamp: new Date().toISOString(),\n  aiResponses: responses,\n  summary: `Tested ${responses.length} AI model(s)`\n};\n\nreturn [{ json: result }];"
+      },
+      "id": "combine-responses",
+      "name": "Combine Responses",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{JSON.stringify($json, null, 2)}}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Test Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Test Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Test Data": {
+      "main": [
+        [
+          {
+            "node": "Create AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI (ChatGPT)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Claude (Anthropic)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI (ChatGPT)": {
+      "main": [
+        [
+          {
+            "node": "Combine Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude (Anthropic)": {
+      "main": [
+        [
+          {
+            "node": "Combine Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Responses": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "gitlab-pr-code-review-test",
+  "meta": {
+    "instanceId": "n8n-instance"
+  },
+  "tags": []
+}
