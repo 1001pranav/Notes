@@ -40,7 +40,90 @@
     },
     {
       "parameters": {
-        "url": "https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-REPO/main/code-review-rules.md",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "config-rules-path",
+              "name": "rulesFilePath",
+              "value": "code-review-rules.md",
+              "type": "string"
+            },
+            {
+              "id": "config-rules-branch",
+              "name": "rulesFileBranch",
+              "value": "main",
+              "type": "string"
+            },
+            {
+              "id": "config-gitlab-url",
+              "name": "gitlabUrl",
+              "value": "={{$json.project.web_url.replace(/^(https?:\\/\\/[^\\/]+).*/, '$1')}}",
+              "type": "string"
+            },
+            {
+              "id": "config-project-id",
+              "name": "projectId",
+              "value": "={{$json.project.id}}",
+              "type": "number"
+            },
+            {
+              "id": "config-project-name",
+              "name": "projectName",
+              "value": "={{$json.project.name}}",
+              "type": "string"
+            },
+            {
+              "id": "config-mr-iid",
+              "name": "mrIid",
+              "value": "={{$json.object_attributes.iid}}",
+              "type": "number"
+            },
+            {
+              "id": "config-mr-title",
+              "name": "mrTitle",
+              "value": "={{$json.object_attributes.title}}",
+              "type": "string"
+            },
+            {
+              "id": "config-mr-description",
+              "name": "mrDescription",
+              "value": "={{$json.object_attributes.description || 'No description'}}",
+              "type": "string"
+            },
+            {
+              "id": "config-source-branch",
+              "name": "sourceBranch",
+              "value": "={{$json.object_attributes.source_branch}}",
+              "type": "string"
+            },
+            {
+              "id": "config-target-branch",
+              "name": "targetBranch",
+              "value": "={{$json.object_attributes.target_branch}}",
+              "type": "string"
+            },
+            {
+              "id": "config-mr-url",
+              "name": "mrUrl",
+              "value": "={{$json.object_attributes.url}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-config",
+      "name": "Extract & Configure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [650, 300],
+      "notes": "CONFIGURATION: Update 'rulesFilePath' and 'rulesFileBranch' here to change where rules file is loaded from. All other values are extracted dynamically from the GitLab webhook."
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "gitLabApi",
+        "url": "={{$json.gitlabUrl}}/api/v4/projects/{{$json.projectId}}/repository/files/{{encodeURIComponent($json.rulesFilePath)}}/raw?ref={{$json.rulesFileBranch}}",
         "options": {
           "response": {
             "response": {
@@ -50,11 +133,11 @@
         }
       },
       "id": "load-review-rules",
-      "name": "Load Review Rules",
+      "name": "Load Review Rules from GitLab",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [650, 100],
-      "notes": "Load code review rules from GitHub or other URL. You can also use a local file path or embed the rules directly in the workflow.",
+      "position": [850, 200],
+      "notes": "Loads code-review-rules.md from the same GitLab project using GitLab API. Configure file path in 'Extract & Configure' node.",
       "alwaysOutputData": true,
       "continueOnFail": true
     },
@@ -62,44 +145,24 @@
       "parameters": {
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "gitLabApi",
-        "url": "={{$json.project.web_url.replace(/^(https?:\\/\\/[^\\/]+).*/, '$1')}}/api/v4/projects/{{$json.project.id}}/merge_requests/{{$json.object_attributes.iid}}/changes",
+        "url": "={{$('Extract & Configure').item.json.gitlabUrl}}/api/v4/projects/{{$('Extract & Configure').item.json.projectId}}/merge_requests/{{$('Extract & Configure').item.json.mrIid}}/changes",
         "options": {}
       },
       "id": "get-mr-diff",
       "name": "Get MR Diff",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [650, 200]
+      "position": [850, 300]
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "review-rules",
-              "name": "reviewRules",
-              "value": "={{$json.data || ''}}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "store-rules",
-      "name": "Store Rules",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.2,
-      "position": [850, 100]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract and prepare code changes for LLM review\nconst mrData = $input.item.json;\n\n// Get review rules from the previous node (if available)\nconst reviewRules = $('Store Rules').first()?.json?.reviewRules || '';\n\nconst projectName = mrData.project?.name || 'Unknown Project';\nconst mrTitle = mrData.title;\nconst mrDescription = mrData.description || 'No description';\nconst sourceBranch = mrData.source_branch;\nconst targetBranch = mrData.target_branch;\nconst webUrl = mrData.web_url;\nconst changes = mrData.changes || [];\n\n// Build diff text from changes\nlet diffText = '';\nlet totalSize = 0;\nconst MAX_CHUNK_SIZE = 100000; // chars per chunk (adjust based on LLM limits)\n\nconst fileChanges = [];\n\nfor (const change of changes) {\n  const filePath = change.new_path || change.old_path;\n  const diff = change.diff || '';\n  \n  // Skip binary files or very large files\n  if (change.new_file && change.binary) {\n    continue;\n  }\n  \n  fileChanges.push({\n    path: filePath,\n    diff: diff,\n    new_file: change.new_file,\n    deleted_file: change.deleted_file,\n    renamed_file: change.renamed_file\n  });\n  \n  diffText += `\\n\\n### File: ${filePath}\\n`;\n  if (change.new_file) diffText += '[NEW FILE]\\n';\n  if (change.deleted_file) diffText += '[DELETED FILE]\\n';\n  if (change.renamed_file) diffText += `[RENAMED from ${change.old_path}]\\n`;\n  diffText += '```diff\\n' + diff + '\\n```\\n';\n  \n  totalSize += diff.length;\n}\n\n// Split into chunks if too large\nconst chunks = [];\nif (totalSize > MAX_CHUNK_SIZE) {\n  let currentChunk = '';\n  let currentFiles = [];\n  \n  for (const fileChange of fileChanges) {\n    const fileSection = `\\n\\n### File: ${fileChange.path}\\n` +\n      (fileChange.new_file ? '[NEW FILE]\\n' : '') +\n      (fileChange.deleted_file ? '[DELETED FILE]\\n' : '') +\n      (fileChange.renamed_file ? `[RENAMED from ${fileChange.old_path}]\\n` : '') +\n      '```diff\\n' + fileChange.diff + '\\n```\\n';\n    \n    if (currentChunk.length + fileSection.length > MAX_CHUNK_SIZE && currentChunk.length > 0) {\n      chunks.push({\n        text: currentChunk,\n        files: [...currentFiles]\n      });\n      currentChunk = fileSection;\n      currentFiles = [fileChange.path];\n    } else {\n      currentChunk += fileSection;\n      currentFiles.push(fileChange.path);\n    }\n  }\n  \n  if (currentChunk.length > 0) {\n    chunks.push({\n      text: currentChunk,\n      files: currentFiles\n    });\n  }\n} else {\n  chunks.push({\n    text: diffText,\n    files: fileChanges.map(f => f.path)\n  });\n}\n\n// Prepare review prompt with custom rules\nlet reviewPrompt = `You are an expert code reviewer. Please review the following merge request changes and provide constructive feedback based on the provided review guidelines.\n\n**Project:** ${projectName}\n**MR Title:** ${mrTitle}\n**Description:** ${mrDescription}\n**Branch:** ${sourceBranch} → ${targetBranch}\n**URL:** ${webUrl}\n\n`;\n\n// Add custom review rules if available\nif (reviewRules && reviewRules.trim().length > 0) {\n  reviewPrompt += `**Code Review Guidelines:**\n\nPlease follow these specific review rules and guidelines:\n\n${reviewRules}\n\n---\n\n`;\n} else {\n  // Fallback to basic instructions if no custom rules are loaded\n  reviewPrompt += `**Review Instructions:**\n1. Review the code changes for:\n   - Bugs and potential issues\n   - Security vulnerabilities (SQL injection, XSS, authentication issues, etc.)\n   - Performance concerns (inefficient algorithms, N+1 queries, etc.)\n   - Code quality and best practices\n   - Maintainability and readability\n2. Provide specific, actionable feedback with line numbers\n3. Highlight both issues and good practices\n4. Use severity levels: 🔴 CRITICAL, 🟡 IMPORTANT, 🟢 SUGGESTION\n5. Format your response as a structured review with sections\n\n`;\n}\n\nreviewPrompt += `**Code Changes:**\n`;\n\nreturn chunks.map((chunk, index) => ({\n  json: {\n    projectId: mrData.project_id,\n    mrIid: mrData.iid,\n    mrTitle: mrTitle,\n    mrUrl: webUrl,\n    chunkIndex: index,\n    totalChunks: chunks.length,\n    files: chunk.files,\n    prompt: reviewPrompt + chunk.text,\n    diffText: chunk.text,\n    rawMrData: mrData\n  }\n}));\n"
+        "jsCode": "// Get config from Extract & Configure node\nconst config = $('Extract & Configure').first().json;\n\n// Get review rules from Load Review Rules node (if available)\nconst reviewRules = $('Load Review Rules from GitLab').first()?.json?.data || '';\n\n// Get MR diff data\nconst mrData = $input.item.json;\n\nconst projectName = config.projectName;\nconst mrTitle = config.mrTitle;\nconst mrDescription = config.mrDescription;\nconst sourceBranch = config.sourceBranch;\nconst targetBranch = config.targetBranch;\nconst webUrl = config.mrUrl;\nconst changes = mrData.changes || [];\n\n// Build diff text from changes\nlet diffText = '';\nlet totalSize = 0;\nconst MAX_CHUNK_SIZE = 100000; // chars per chunk (adjust based on LLM limits)\n\nconst fileChanges = [];\n\nfor (const change of changes) {\n  const filePath = change.new_path || change.old_path;\n  const diff = change.diff || '';\n  \n  // Skip binary files\n  if (change.binary) {\n    continue;\n  }\n  \n  fileChanges.push({\n    path: filePath,\n    diff: diff,\n    new_file: change.new_file,\n    deleted_file: change.deleted_file,\n    renamed_file: change.renamed_file\n  });\n  \n  diffText += `\\n\\n### File: ${filePath}\\n`;\n  if (change.new_file) diffText += '[NEW FILE]\\n';\n  if (change.deleted_file) diffText += '[DELETED FILE]\\n';\n  if (change.renamed_file) diffText += `[RENAMED from ${change.old_path}]\\n`;\n  diffText += '```diff\\n' + diff + '\\n```\\n';\n  \n  totalSize += diff.length;\n}\n\n// Split into chunks if too large\nconst chunks = [];\nif (totalSize > MAX_CHUNK_SIZE) {\n  let currentChunk = '';\n  let currentFiles = [];\n  \n  for (const fileChange of fileChanges) {\n    const fileSection = `\\n\\n### File: ${fileChange.path}\\n` +\n      (fileChange.new_file ? '[NEW FILE]\\n' : '') +\n      (fileChange.deleted_file ? '[DELETED FILE]\\n' : '') +\n      (fileChange.renamed_file ? `[RENAMED from ${fileChange.old_path}]\\n` : '') +\n      '```diff\\n' + fileChange.diff + '\\n```\\n';\n    \n    if (currentChunk.length + fileSection.length > MAX_CHUNK_SIZE && currentChunk.length > 0) {\n      chunks.push({\n        text: currentChunk,\n        files: [...currentFiles]\n      });\n      currentChunk = fileSection;\n      currentFiles = [fileChange.path];\n    } else {\n      currentChunk += fileSection;\n      currentFiles.push(fileChange.path);\n    }\n  }\n  \n  if (currentChunk.length > 0) {\n    chunks.push({\n      text: currentChunk,\n      files: currentFiles\n    });\n  }\n} else {\n  chunks.push({\n    text: diffText,\n    files: fileChanges.map(f => f.path)\n  });\n}\n\n// Prepare review prompt with custom rules\nlet reviewPrompt = `You are an expert code reviewer. Please review the following merge request changes and provide constructive feedback based on the provided review guidelines.\n\n**Project:** ${projectName}\n**MR Title:** ${mrTitle}\n**Description:** ${mrDescription}\n**Branch:** ${sourceBranch} → ${targetBranch}\n**URL:** ${webUrl}\n\n`;\n\n// Add custom review rules if available\nif (reviewRules && reviewRules.trim().length > 0) {\n  reviewPrompt += `**Code Review Guidelines:**\n\nPlease follow these specific review rules and guidelines:\n\n${reviewRules}\n\n---\n\n`;\n} else {\n  // Fallback to basic instructions if no custom rules are loaded\n  reviewPrompt += `**Review Instructions:**\n1. Review the code changes for:\n   - Bugs and potential issues\n   - Security vulnerabilities (SQL injection, XSS, authentication issues, etc.)\n   - Performance concerns (inefficient algorithms, N+1 queries, etc.)\n   - Code quality and best practices\n   - Maintainability and readability\n2. Provide specific, actionable feedback with line numbers\n3. Highlight both issues and good practices\n4. Use severity levels: 🔴 CRITICAL, 🟡 IMPORTANT, 🟢 SUGGESTION\n5. Format your response as a structured review with sections\n\n`;\n}\n\nreviewPrompt += `**Code Changes:**\n`;\n\nreturn chunks.map((chunk, index) => ({\n  json: {\n    projectId: config.projectId,\n    mrIid: config.mrIid,\n    mrTitle: mrTitle,\n    mrUrl: webUrl,\n    gitlabUrl: config.gitlabUrl,\n    chunkIndex: index,\n    totalChunks: chunks.length,\n    files: chunk.files,\n    prompt: reviewPrompt + chunk.text,\n    diffText: chunk.text\n  }\n}));\n"
       },
       "id": "prepare-code-review",
       "name": "Prepare Code for Review",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1050, 200]
+      "position": [1050, 250]
     },
     {
       "parameters": {
@@ -114,7 +177,7 @@
       "name": "Claude Code Review",
       "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1,
-      "position": [1250, 100],
+      "position": [1250, 150],
       "credentials": {
         "anthropicApi": {
           "id": "anthropic-credentials",
@@ -142,7 +205,7 @@
       "name": "ChatGPT Code Review",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1,
-      "position": [1250, 300],
+      "position": [1250, 350],
       "credentials": {
         "openAiApi": {
           "id": "openai-credentials",
@@ -152,20 +215,20 @@
     },
     {
       "parameters": {
-        "jsCode": "// Combine all chunk reviews if multiple chunks\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [];\n}\n\n// Group by MR\nconst mrGroups = {};\nfor (const item of items) {\n  const mrIid = item.json.mrIid;\n  if (!mrGroups[mrIid]) {\n    mrGroups[mrIid] = [];\n  }\n  mrGroups[mrIid].push(item);\n}\n\nconst results = [];\n\nfor (const [mrIid, mrItems] of Object.entries(mrGroups)) {\n  const firstItem = mrItems[0].json;\n  \n  let combinedReview = '';\n  \n  if (mrItems.length > 1) {\n    combinedReview = `## Code Review Summary\\n\\nThis merge request was reviewed in ${mrItems.length} parts due to its size.\\n\\n`;\n    \n    mrItems.sort((a, b) => a.json.chunkIndex - b.json.chunkIndex);\n    \n    for (const item of mrItems) {\n      const review = item.json.response?.output || item.json.output || 'No review generated';\n      combinedReview += `\\n### Part ${item.json.chunkIndex + 1} - Files: ${item.json.files.join(', ')}\\n\\n`;\n      combinedReview += review + '\\n\\n---\\n\\n';\n    }\n  } else {\n    combinedReview = mrItems[0].json.response?.output || mrItems[0].json.output || 'No review generated';\n  }\n  \n  // Add footer with review metadata\n  combinedReview += `\\n\\n---\\n*🤖 Automated code review powered by AI | Generated on ${new Date().toISOString()}*`;\n  \n  results.push({\n    json: {\n      projectId: firstItem.projectId,\n      mrIid: mrIid,\n      mrUrl: firstItem.mrUrl,\n      review: combinedReview,\n      timestamp: new Date().toISOString()\n    }\n  });\n}\n\nreturn results;"
+        "jsCode": "// Combine all chunk reviews if multiple chunks\nconst items = $input.all();\n\nif (items.length === 0) {\n  return [];\n}\n\n// Group by MR\nconst mrGroups = {};\nfor (const item of items) {\n  const mrIid = item.json.mrIid;\n  if (!mrGroups[mrIid]) {\n    mrGroups[mrIid] = [];\n  }\n  mrGroups[mrIid].push(item);\n}\n\nconst results = [];\n\nfor (const [mrIid, mrItems] of Object.entries(mrGroups)) {\n  const firstItem = mrItems[0].json;\n  \n  let combinedReview = '';\n  \n  if (mrItems.length > 1) {\n    combinedReview = `## Code Review Summary\\n\\nThis merge request was reviewed in ${mrItems.length} parts due to its size.\\n\\n`;\n    \n    mrItems.sort((a, b) => a.json.chunkIndex - b.json.chunkIndex);\n    \n    for (const item of mrItems) {\n      const review = item.json.response?.output || item.json.output || 'No review generated';\n      combinedReview += `\\n### Part ${item.json.chunkIndex + 1} - Files: ${item.json.files.join(', ')}\\n\\n`;\n      combinedReview += review + '\\n\\n---\\n\\n';\n    }\n  } else {\n    combinedReview = mrItems[0].json.response?.output || mrItems[0].json.output || 'No review generated';\n  }\n  \n  // Add footer with review metadata\n  combinedReview += `\\n\\n---\\n*🤖 Automated code review powered by AI | Generated on ${new Date().toISOString()}*`;\n  \n  results.push({\n    json: {\n      projectId: firstItem.projectId,\n      mrIid: mrIid,\n      mrUrl: firstItem.mrUrl,\n      gitlabUrl: firstItem.gitlabUrl,\n      review: combinedReview,\n      timestamp: new Date().toISOString()\n    }\n  });\n}\n\nreturn results;"
       },
       "id": "combine-reviews",
       "name": "Combine Reviews",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1450, 200]
+      "position": [1450, 250]
     },
     {
       "parameters": {
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "gitLabApi",
         "method": "POST",
-        "url": "={{$json.mrUrl.replace(/^(https?:\\/\\/[^\\/]+).*/, '$1')}}/api/v4/projects/{{$json.projectId}}/merge_requests/{{$json.mrIid}}/notes",
+        "url": "={{$json.gitlabUrl}}/api/v4/projects/{{$json.projectId}}/merge_requests/{{$json.mrIid}}/notes",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -181,7 +244,7 @@
       "name": "Post Review to GitLab",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1650, 200]
+      "position": [1650, 250]
     },
     {
       "parameters": {
@@ -193,7 +256,7 @@
       "name": "Webhook Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1850, 200]
+      "position": [1850, 250]
     },
     {
       "parameters": {
@@ -207,7 +270,7 @@
       "name": "Webhook Ignore",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [650, 400]
+      "position": [650, 450]
     }
   ],
   "pinData": {},
@@ -227,12 +290,7 @@
       "main": [
         [
           {
-            "node": "Load Review Rules",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Get MR Diff",
+            "node": "Extract & Configure",
             "type": "main",
             "index": 0
           }
@@ -246,18 +304,23 @@
         ]
       ]
     },
-    "Load Review Rules": {
+    "Extract & Configure": {
       "main": [
         [
           {
-            "node": "Store Rules",
+            "node": "Load Review Rules from GitLab",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get MR Diff",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get MR Diff": {
+    "Load Review Rules from GitLab": {
       "main": [
         [
           {
@@ -268,7 +331,7 @@
         ]
       ]
     },
-    "Store Rules": {
+    "Get MR Diff": {
       "main": [
         [
           {
@@ -344,7 +407,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "2",
+  "versionId": "3",
   "id": "gitlab-pr-code-review",
   "meta": {
     "instanceId": "n8n-instance"

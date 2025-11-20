@@ -4,13 +4,34 @@ This N8N workflow automatically reviews GitLab merge requests using AI (Claude o
 
 ## Features
 
+- ✅ **Works with private GitLab servers** - Fully dynamic, auto-detects your GitLab URL
 - ✅ Triggers automatically on GitLab merge request events (open/update)
 - ✅ Retrieves full code diff from merge requests
 - ✅ Handles large PRs by chunking code (avoids token limits)
 - ✅ Supports multiple LLM providers (Claude, ChatGPT/OpenAI)
-- ✅ Posts comprehensive review comments back to GitLab
+- ✅ **Loads rules from the same GitLab project** - No external URLs needed
+- ✅ **Single configuration point** - Set values once, reused everywhere
 - ✅ **Customizable review rules** - Use your own code review guidelines
 - ✅ Reviews focus on: bugs, security, performance, code quality, best practices
+
+## Quick Reference
+
+**Where to configure:**
+- Rules file path & branch: **"Extract & Configure"** node in N8N (default: `code-review-rules.md` from `main` branch)
+- LLM choice: Keep or delete Claude/ChatGPT nodes
+- Everything else: Auto-detected from GitLab webhook!
+
+**How it works:**
+1. GitLab webhook → N8N extracts your GitLab URL, project ID, MR details
+2. N8N loads `code-review-rules.md` from **the same GitLab project** using GitLab API
+3. AI reviews code using your custom rules
+4. Review posted as comment on the MR
+
+**Works with:**
+- ✅ GitLab.com
+- ✅ Self-hosted GitLab
+- ✅ Private GitLab servers
+- ✅ Any GitLab instance (auto-detected!)
 
 ## Prerequisites
 
@@ -62,37 +83,53 @@ This N8N workflow automatically reviews GitLab merge requests using AI (Claude o
 4. Save the credential
 5. In the workflow, assign this credential to the **"ChatGPT Code Review"** node
 
-### Step 3: Configure Code Review Rules
+### Step 3: Add Code Review Rules to Your GitLab Project
 
-The workflow uses a customizable rules file (`code-review-rules.md`) that defines what the AI should look for during code reviews.
+The workflow automatically loads `code-review-rules.md` from the **same GitLab project** that triggered the merge request.
 
-#### Option A: Use Rules from GitHub (Recommended)
+#### Add Rules File to Your GitLab Project
 
-1. Upload `code-review-rules.md` to your GitHub repository
-2. Get the raw URL:
-   - Navigate to the file on GitHub
-   - Click **Raw** button
-   - Copy the URL (e.g., `https://raw.githubusercontent.com/YOUR-USERNAME/YOUR-REPO/main/code-review-rules.md`)
-3. In N8N workflow, click on **"Load Review Rules"** node
-4. Update the **URL** parameter with your raw GitHub URL
-5. Save the workflow
-
-#### Option B: Use Local File or HTTP Endpoint
-
-1. Host `code-review-rules.md` on any HTTP server
-2. Update the URL in **"Load Review Rules"** node
-3. Ensure the URL is publicly accessible or configure authentication
-
-#### Option C: Embed Rules Directly (No External URL)
-
-1. Delete the **"Load Review Rules"** and **"Store Rules"** nodes
-2. Open the **"Prepare Code for Review"** node
-3. Modify the JavaScript code to include your rules directly:
-   ```javascript
-   const reviewRules = `
-   [Paste your review rules here]
-   `;
+1. **Upload the rules file** to your GitLab repository:
+   ```bash
+   # In your GitLab project root
+   cp code-review-rules.md your-project/
+   cd your-project
+   git add code-review-rules.md
+   git commit -m "Add code review rules"
+   git push origin main
    ```
+
+2. **That's it!** The workflow will automatically:
+   - Detect your GitLab server URL
+   - Use the project that triggered the webhook
+   - Load `code-review-rules.md` from the `main` branch
+
+#### Customize File Path or Branch (Optional)
+
+If you want to store the rules file elsewhere, update the **"Extract & Configure"** node in N8N:
+
+1. Open the N8N workflow
+2. Click on **"Extract & Configure"** node
+3. Modify these values:
+   - **rulesFilePath**: Change from `code-review-rules.md` to your path (e.g., `docs/code-review-rules.md`)
+   - **rulesFileBranch**: Change from `main` to your branch (e.g., `develop`, `master`)
+4. Save the workflow
+
+#### How It Works - Dynamic Configuration
+
+The workflow extracts everything dynamically from the GitLab webhook:
+
+**Automatically Extracted:**
+- ✅ GitLab Server URL (works with any private GitLab instance)
+- ✅ Project ID and Name
+- ✅ Merge Request details (title, description, branches)
+- ✅ MR URL
+
+**You Only Configure:**
+- Rules file path (default: `code-review-rules.md`)
+- Rules file branch (default: `main`)
+
+All values are extracted once and reused throughout the workflow - **no need to enter your GitLab URL or project details anywhere!**
 
 #### Customize Review Rules
 
@@ -140,14 +177,18 @@ See `code-review-rules.md` for the full template with detailed examples.
 ```
 GitLab MR Event → Webhook Trigger → Filter Events
                                           ↓
+                              Extract & Configure
+                          (Auto-detects GitLab URL,
+                           Project ID, MR details)
+                                          ↓
                     ┌─────────────────────┴─────────────────────┐
                     ↓                                             ↓
-          Load Review Rules                                Get MR Diff
-                    ↓                                             ↓
-              Store Rules                                         ↓
+    Load Review Rules from GitLab                        Get MR Diff
+    (Uses GitLab API + same project)                              ↓
                     └─────────────────────┬─────────────────────┘
                                           ↓
                               Prepare Code for Review
+                          (Combines rules + code diff)
                                           ↓
                     ┌─────────────────────┴─────────────────────┐
                     ↓                                             ↓
@@ -160,6 +201,22 @@ GitLab MR Event → Webhook Trigger → Filter Events
                                           ↓
                                    Webhook Response
 ```
+
+### Key Improvements - Dynamic GitLab Support
+
+**1. Auto-Detection**
+- GitLab server URL extracted from webhook payload
+- Works with any GitLab instance (gitlab.com, self-hosted, private servers)
+- No hardcoded URLs anywhere
+
+**2. Single Configuration Point**
+The **"Extract & Configure"** node is where all dynamic values are set:
+- Rules file path: `code-review-rules.md` (customizable)
+- Rules file branch: `main` (customizable)
+- Everything else auto-extracted from webhook
+
+**3. Reusable Variables**
+All extracted values (GitLab URL, project ID, MR details) are stored once and reused throughout the workflow - no duplication!
 
 ### Code Chunking for Large PRs
 
@@ -181,9 +238,49 @@ The LLM reviews code for:
 
 ## Configuration Options
 
+### Understanding the Extract & Configure Node
+
+This is the **single source of truth** for all configuration. Open this node in N8N to customize:
+
+**Configurable Values:**
+```
+rulesFilePath: "code-review-rules.md"        # Path to rules file in GitLab
+rulesFileBranch: "main"                      # Branch to load rules from
+```
+
+**Auto-Extracted Values (Do NOT modify):**
+```
+gitlabUrl: <auto-detected from webhook>     # Your GitLab server URL
+projectId: <auto-detected>                   # GitLab project ID
+projectName: <auto-detected>                 # Project name
+mrIid: <auto-detected>                       # Merge request ID
+mrTitle: <auto-detected>                     # MR title
+mrDescription: <auto-detected>               # MR description
+sourceBranch: <auto-detected>                # Source branch
+targetBranch: <auto-detected>                # Target branch
+mrUrl: <auto-detected>                       # MR URL
+```
+
+**Examples:**
+
+Different rules for different environments:
+```javascript
+// Development branch - less strict rules
+rulesFilePath: "code-review-rules-dev.md"
+rulesFileBranch: "develop"
+
+// Production branch - strict rules
+rulesFilePath: "code-review-rules-prod.md"
+rulesFileBranch: "main"
+
+// Rules in subdirectory
+rulesFilePath: "docs/standards/code-review-rules.md"
+rulesFileBranch: "main"
+```
+
 ### Customizing Code Review Rules
 
-The workflow uses `code-review-rules.md` to define review criteria. This file is loaded at runtime, allowing you to update review guidelines without modifying the workflow.
+The workflow uses `code-review-rules.md` to define review criteria. This file is loaded at runtime from your GitLab project, allowing you to update review guidelines without modifying the workflow.
 
 #### Key Sections in code-review-rules.md
 
@@ -288,16 +385,64 @@ In the LLM node, modify `maxTokens`:
 3. Check N8N execution log for errors
 4. Verify comment appears on GitLab MR
 
+### Testing with Different GitLab Instances
+
+The workflow automatically works with any GitLab instance:
+
+**GitLab.com (Public)**
+```
+✅ Webhook receives: https://gitlab.com/user/project
+✅ Auto-extracted gitlabUrl: https://gitlab.com
+✅ API calls: https://gitlab.com/api/v4/...
+```
+
+**Self-Hosted GitLab**
+```
+✅ Webhook receives: https://gitlab.yourcompany.com/team/project
+✅ Auto-extracted gitlabUrl: https://gitlab.yourcompany.com
+✅ API calls: https://gitlab.yourcompany.com/api/v4/...
+```
+
+**Custom Port**
+```
+✅ Webhook receives: https://gitlab.internal.com:8443/team/project
+✅ Auto-extracted gitlabUrl: https://gitlab.internal.com:8443
+✅ API calls: https://gitlab.internal.com:8443/api/v4/...
+```
+
+No configuration changes needed - it just works!
+
 ### Common Issues
 
 **Issue**: Webhook not triggering
 - **Solution**: Check webhook URL is correct and N8N is accessible from GitLab
 - Verify webhook is active in GitLab settings
 - Check GitLab webhook delivery logs for errors
+- For private GitLab: Ensure N8N server is accessible from your network
 
 **Issue**: "Unauthorized" or "403" errors
 - **Solution**: Verify GitLab API token has correct permissions
 - Token needs: `api`, `read_api`, `read_repository`, `write_repository`
+- Check token hasn't expired
+- Verify token has access to the specific project
+
+**Issue**: Rules file not loading (review uses fallback rules)
+- **Solution**: Check `code-review-rules.md` exists in your GitLab project root
+- Verify the file is in the correct branch (default: `main`)
+- Check N8N execution log for "Load Review Rules from GitLab" node errors
+- Verify GitLab API token has `read_repository` permission
+- If using custom path, check the path in "Extract & Configure" node
+
+**Issue**: GitLab URL not detected correctly
+- **Solution**: Check the webhook payload contains `project.web_url`
+- Verify your GitLab version supports this field (GitLab 8.1+)
+- Check N8N execution log for "Extract & Configure" node output
+
+**Issue**: Works with gitlab.com but not private GitLab
+- **Solution**: Verify N8N can reach your private GitLab server
+- Check SSL certificate if using self-signed certificates
+- Add your GitLab server's certificate to N8N's trusted certificates
+- Verify firewall rules allow N8N → GitLab communication
 
 **Issue**: LLM API errors
 - **Solution**: Check API credentials are correct
@@ -308,6 +453,11 @@ In the LLM node, modify `maxTokens`:
 - **Solution**: Increase N8N workflow timeout in settings
 - Reduce chunk size for faster processing
 - Use faster LLM models (Haiku, GPT-3.5)
+
+**Issue**: Different projects use wrong rules
+- **Solution**: Each project loads rules from its own repository
+- Check the "Load Review Rules from GitLab" node uses `$json.projectId`
+- Each project can have its own `code-review-rules.md`
 
 ## Cost Considerations
 
