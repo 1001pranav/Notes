@@ -1,3 +1,12 @@
+[Docker Images](#3-docker-images)
+   - 3.1 [What is a Docker Image?](#31-what-is-a-docker-image)
+   - 3.2 [Pulling Images](#32-pulling-images)
+   - 3.3 [Listing Images](#33-listing-images)
+   - 3.4 [Removing Images](#34-removing-images)
+   - 3.5 [Image Tags](#35-image-tags)
+   - 3.6 [Docker Hub](#36-docker-hub)
+
+
 ## 3. Docker Images
 
 ### 3.1 What is a Docker Image?
