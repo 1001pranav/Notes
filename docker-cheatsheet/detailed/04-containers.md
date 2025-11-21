@@ -1,225 +1,255 @@
-## 4. Docker Containers
+# Docker Containers - Detailed Guide
 
-### 4.1 What is a Container?
+## What is a Container?
 
-A container is a **running instance** of an image. Think of it as:
-- Image = Class (blueprint)
-- Container = Object (instance)
+**Simple Definition:**
+A container is a **running instance** of an image. If an image is a blueprint, a container is the actual building created from that blueprint.
+
+**Programming Analogy:**
+```
+Image     = Class      (the definition/template)
+Container = Object     (an instance you can interact with)
+```
+
+**Why containers?**
+- They provide an **isolated environment** for your application
+- Multiple containers can run from the same image
+- Each container has its own filesystem, network, and processes
+- Containers are lightweight and start in seconds
 
 ```
 One Image → Multiple Containers:
 
 +------------------+
-|   nginx image    |
+|   nginx image    |  (stored on disk, read-only)
 +------------------+
          |
-    +----+----+----+
-    |    |    |    |
-    v    v    v    v
- [web1] [web2] [web3] [web4]  ← Running containers
+    Creates instances
+         |
+    +----+----+----+----+
+    |    |    |    |    |
+    v    v    v    v    v
+ [web1][web2][web3][web4][web5]  ← Running containers
 ```
 
-### 4.2 Running Containers
+---
 
-**Basic Run:**
+## Running Containers
+
+### Understanding Run Options
+
+#### `-d` (Detached Mode)
+**What is it?** Runs container in **background**
+**Why use it?** So your terminal isn't blocked
+
 ```bash
-# Simple run
-docker run nginx
-
-# Run in background (detached)
-docker run -d nginx
-
-# Run with name
-docker run -d --name my-nginx nginx
-
-# Run with port mapping
-docker run -d -p 8080:80 nginx
-# Access at http://localhost:8080
-
-# Run interactively
-docker run -it ubuntu bash
-
-# Run and auto-remove when stopped
-docker run --rm nginx
+docker run nginx        # Foreground - blocks terminal
+docker run -d nginx     # Background - returns immediately
 ```
 
-**Common Run Options:**
-| Option | Description | Example |
-|--------|-------------|---------|
-| `-d` | Detached (background) | `docker run -d nginx` |
-| `-p` | Port mapping | `-p 8080:80` |
-| `-v` | Volume mount | `-v /host:/container` |
-| `-e` | Environment variable | `-e NODE_ENV=production` |
-| `--name` | Container name | `--name myapp` |
-| `-it` | Interactive terminal | `-it ubuntu bash` |
-| `--rm` | Remove on stop | `--rm nginx` |
-| `--network` | Connect to network | `--network mynet` |
-| `--restart` | Restart policy | `--restart always` |
+#### `--name` (Container Name)
+**What is it?** Human-readable name for the container
+**Why use it?** Easier than random IDs like "happy_einstein"
 
-**Full Example:**
+```bash
+docker run -d --name my-website nginx
+docker stop my-website  # Easy to reference
+```
+
+#### `-p` (Port Mapping)
+**What is it?** Connects your computer's port to container's port
+**Why use it?** Containers are isolated - no access without port mapping
+
+```bash
+docker run -d -p 8080:80 nginx
+#              ^^^^  ^^
+#              |     +-- Container port (nginx listens here)
+#              +-- Your computer port (localhost:8080)
+
+# Access: http://localhost:8080
+```
+
+#### `-it` (Interactive Terminal)
+**What is it?** `-i` (interactive) + `-t` (terminal)
+**Why use it?** To get a shell inside the container
+
+```bash
+docker run -it ubuntu bash
+# Now you're "inside" the container
+root@abc123:/# exit
+```
+
+#### `-e` (Environment Variables)
+**What is it?** Sets environment variables in container
+**Why use it?** Configure your app without changing code
+
+```bash
+docker run -d -e NODE_ENV=production -e API_KEY=secret myapp
+```
+
+#### `-v` (Volume Mount)
+**What is it?** Links a folder on your computer to one in container
+**Why use it?** Persist data, share files
+
+```bash
+docker run -d -v $(pwd):/app node:18
+```
+
+#### `--rm` (Auto Remove)
+**What is it?** Deletes container automatically when it stops
+**Why use it?** No leftover stopped containers
+
+```bash
+docker run --rm node:18 node --version
+```
+
+#### `--restart` (Restart Policy)
+**What is it?** When Docker should restart the container
+**Why use it?** Keep services running
+
+```bash
+--restart always         # Always restart
+--restart unless-stopped # Unless manually stopped
+--restart on-failure     # Only on crash
+```
+
+### Full Example
 ```bash
 docker run -d \
-  --name my-web-app \
+  --name my-app \
   -p 3000:3000 \
   -e NODE_ENV=production \
-  -e DB_HOST=localhost \
   -v $(pwd)/data:/app/data \
   --restart unless-stopped \
   myapp:v1.0
 ```
 
-### 4.3 Container Lifecycle
+---
+
+## Container Lifecycle
 
 ```
-        docker create
-             |
-             v
-+-------------------------+
-|        CREATED          |
-+-------------------------+
-             |
-      docker start
-             |
-             v
-+-------------------------+
-|        RUNNING          | <--+
-+-------------------------+    |
-      |            |           |
-docker stop   docker pause     | docker restart
-      |            |           |
-      v            v           |
-+---------+  +---------+       |
-| EXITED  |  | PAUSED  |-------+
-+---------+  +---------+
-      |       docker unpause
-      |
-docker rm
-      |
-      v
-   DELETED
+docker create → CREATED → docker start → RUNNING
+                                            |
+                          docker stop ──────+──── docker pause
+                               |                       |
+                               v                       v
+                           EXITED                   PAUSED
+                               |                       |
+                          docker rm              docker unpause
+                               |                       |
+                               v                       +→ RUNNING
+                           DELETED
 ```
 
-### 4.4 Managing Containers
+| State | Meaning |
+|-------|---------|
+| **Created** | Exists but never started |
+| **Running** | Actively executing |
+| **Paused** | Frozen, can resume |
+| **Exited** | Stopped |
+
+---
+
+## Managing Containers
 
 ```bash
 # List running containers
 docker ps
 
-# List all containers (including stopped)
+# List ALL containers (including stopped)
 docker ps -a
 
-# Start a stopped container
-docker start container_name
+# Stop container (graceful shutdown)
+docker stop my-nginx
 
-# Stop a running container
-docker stop container_name
+# Start stopped container
+docker start my-nginx
 
-# Stop immediately (force)
-docker kill container_name
+# Restart
+docker restart my-nginx
 
-# Restart container
-docker restart container_name
+# Kill immediately (no graceful shutdown)
+docker kill my-nginx
 
-# Pause container
-docker pause container_name
+# Remove stopped container
+docker rm my-nginx
 
-# Unpause container
-docker unpause container_name
-
-# Remove container
-docker rm container_name
-
-# Remove running container (force)
-docker rm -f container_name
+# Force remove running container
+docker rm -f my-nginx
 
 # Remove all stopped containers
 docker container prune
-
-# Remove all containers (careful!)
-docker rm -f $(docker ps -aq)
-```
-
-### 4.5 Container Logs
-
-```bash
-# View logs
-docker logs container_name
-
-# Follow logs (like tail -f)
-docker logs -f container_name
-
-# Show last N lines
-docker logs --tail 100 container_name
-
-# Show logs with timestamps
-docker logs -t container_name
-
-# Show logs since time
-docker logs --since 2023-01-01 container_name
-docker logs --since 10m container_name
-
-# Combine options
-docker logs -f --tail 50 -t container_name
-```
-
-### 4.6 Executing Commands in Containers
-
-```bash
-# Run command in running container
-docker exec container_name ls -la
-
-# Interactive shell
-docker exec -it container_name bash
-# OR for Alpine-based images
-docker exec -it container_name sh
-
-# Run as specific user
-docker exec -u root container_name whoami
-
-# Set working directory
-docker exec -w /app container_name pwd
-
-# With environment variable
-docker exec -e MY_VAR=value container_name env
-```
-
-**Useful Debugging Commands:**
-```bash
-# Check processes
-docker exec container_name ps aux
-
-# Check network
-docker exec container_name netstat -tlnp
-
-# Check environment
-docker exec container_name env
-
-# Check disk usage
-docker exec container_name df -h
-```
-
-### 4.7 Container Resource Limits
-
-```bash
-# Limit memory
-docker run -d --memory="512m" nginx
-
-# Limit CPU
-docker run -d --cpus="1.5" nginx
-
-# Limit both
-docker run -d \
-  --memory="1g" \
-  --memory-swap="2g" \
-  --cpus="2" \
-  nginx
-
-# Check resource usage
-docker stats
-
-# Check specific container
-docker stats container_name
 ```
 
 ---
 
+## Container Logs
+
+**What are logs?**
+Everything your app prints to stdout/stderr.
+
+```bash
+# View all logs
+docker logs my-nginx
+
+# Follow logs in real-time
+docker logs -f my-nginx
+
+# Last 100 lines
+docker logs --tail 100 my-nginx
+
+# With timestamps
+docker logs -t my-nginx
+
+# Logs from last 10 minutes
+docker logs --since 10m my-nginx
+```
+
+---
+
+## Executing Commands in Containers
+
+**What is `docker exec`?**
+Run commands inside a running container.
+
+```bash
+# Run a command
+docker exec my-nginx ls /etc/nginx
+
+# Get interactive shell
+docker exec -it my-nginx bash
+# For Alpine images (no bash):
+docker exec -it my-nginx sh
+
+# Run as different user
+docker exec -u root my-nginx whoami
+
+# Debugging commands
+docker exec my-nginx ps aux        # Processes
+docker exec my-nginx env           # Environment
+docker exec my-nginx df -h         # Disk space
+```
+
+---
+
+## Resource Limits
+
+**Why limit resources?**
+Prevent one container from consuming all system resources.
+
+```bash
+# Limit memory to 512MB
+docker run -d --memory="512m" nginx
+
+# Limit to 1.5 CPU cores
+docker run -d --cpus="1.5" nginx
+
+# Combined
+docker run -d --memory="1g" --cpus="2" myapp
+
+# Monitor usage
+docker stats
+```
+
+---
