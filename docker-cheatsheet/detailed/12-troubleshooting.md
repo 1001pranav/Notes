@@ -1,6 +1,14 @@
-## 12. Troubleshooting & Tips
+# Docker Troubleshooting & Tips
 
-### 12.1 Common Issues
+## Table of Contents
+- [Common Issues](#common-issues)
+- [Useful Commands Cheatsheet](#useful-commands-cheatsheet)
+- [Performance Tips](#performance-tips)
+- [Quick Reference Card](#quick-reference-card)
+
+---
+
+## Common Issues
 
 | Problem | Solution |
 |---------|----------|
@@ -27,7 +35,7 @@ docker inspect container_name
 docker top container_name
 ```
 
-### 12.2 Useful Commands Cheatsheet
+## Useful Commands Cheatsheet
 
 ```bash
 # === IMAGES ===
@@ -77,7 +85,7 @@ docker inspect resource         # Detailed info
 docker stats                    # Resource usage
 ```
 
-### 12.3 Performance Tips
+## Performance Tips
 
 1. **Use Alpine-based images** (smaller size)
 ```dockerfile
