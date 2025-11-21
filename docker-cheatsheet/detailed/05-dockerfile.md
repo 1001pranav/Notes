@@ -1,5 +1,30 @@
 # Dockerfile - Building Custom Images (Detailed Guide)
 
+## Table of Contents
+- [What is a Dockerfile?](#what-is-a-dockerfile)
+- [Understanding Dockerfile Instructions](#understanding-dockerfile-instructions-beginner-friendly)
+  - [FROM](#from---the-starting-point)
+  - [WORKDIR](#workdir---setting-your-working-directory)
+  - [COPY](#copy---copying-files-from-your-computer-to-container)
+  - [ADD vs COPY](#add-vs-copy---whats-the-difference)
+  - [RUN](#run---executing-commands-during-build)
+  - [CMD](#cmd---the-default-command-what-runs-when-container-starts)
+  - [ENTRYPOINT](#entrypoint---the-fixed-command)
+  - [ENV](#env---environment-variables)
+  - [ARG](#arg---build-time-variables)
+  - [EXPOSE](#expose---documenting-ports)
+  - [VOLUME](#volume---persistent-data-mount-points)
+  - [USER](#user---running-as-non-root)
+  - [HEALTHCHECK](#healthcheck---container-health-monitoring)
+  - [LABEL](#label---adding-metadata)
+- [Complete Dockerfile Examples](#complete-dockerfile-examples)
+- [Multi-Stage Builds Explained](#multi-stage-builds-explained)
+- [.dockerignore Explained](#dockerignore-explained)
+- [Building Images](#building-images)
+- [Best Practices Summary](#best-practices-summary)
+
+---
+
 ## What is a Dockerfile?
 
 A Dockerfile is a **text file containing step-by-step instructions** that Docker uses to automatically build an image. Think of it like a recipe - it tells Docker exactly what ingredients (base image, files, dependencies) and steps (commands) are needed to create your application's container.

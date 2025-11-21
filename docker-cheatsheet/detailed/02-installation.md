@@ -1,6 +1,14 @@
-## 2. Installation & Setup
+# Docker Installation & Setup
 
-### 2.1 Installing Docker on Linux
+## Table of Contents
+- [Installing Docker on Linux](#installing-docker-on-linux)
+- [Installing Docker on Windows/Mac](#installing-docker-on-windowsmac)
+- [Verify Installation](#verify-installation)
+- [Post-Installation Steps](#post-installation-steps)
+
+---
+
+## Installing Docker on Linux
 
 **Ubuntu/Debian:**
 ```bash
@@ -44,7 +52,7 @@ sudo systemctl start docker
 sudo systemctl enable docker
 ```
 
-### 2.2 Installing Docker on Windows/Mac
+## Installing Docker on Windows/Mac
 
 **Windows:**
 1. Download Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
@@ -59,7 +67,7 @@ sudo systemctl enable docker
 3. Open Docker from Applications
 4. Grant necessary permissions
 
-### 2.3 Verify Installation
+## Verify Installation
 
 ```bash
 # Check Docker version
@@ -80,7 +88,7 @@ Hello from Docker!
 This message shows that your installation appears to be working correctly.
 ```
 
-### 2.4 Post-Installation Steps
+## Post-Installation Steps
 
 **Run Docker without sudo (Linux):**
 ```bash

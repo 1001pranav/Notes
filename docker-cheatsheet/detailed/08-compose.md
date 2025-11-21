@@ -1,6 +1,16 @@
-## 8. Docker Compose
+# Docker Compose - Detailed Guide
 
-### 8.1 What is Docker Compose?
+## Table of Contents
+- [What is Docker Compose?](#what-is-docker-compose)
+- [docker-compose.yml Structure](#docker-composeyml-structure)
+- [Docker Compose Commands](#docker-compose-commands)
+- [Environment Variables](#environment-variables)
+- [Depends On & Health Checks](#depends-on--health-checks)
+- [Real-World Examples](#real-world-examples)
+
+---
+
+## What is Docker Compose?
 
 Docker Compose is a tool for defining and running **multi-container** applications.
 
@@ -36,7 +46,7 @@ services:
 docker compose up -d  # That's it!
 ```
 
-### 8.2 docker-compose.yml Structure
+## docker-compose.yml Structure
 
 ```yaml
 version: "3.9"  # Optional in newer versions
@@ -115,7 +125,7 @@ networks:
   backend:
 ```
 
-### 8.3 Docker Compose Commands
+## Docker Compose Commands
 
 ```bash
 # Start services
@@ -162,7 +172,7 @@ docker compose pull
 docker compose config
 ```
 
-### 8.4 Environment Variables
+## Environment Variables
 
 **Method 1: Inline**
 ```yaml
@@ -198,7 +208,7 @@ VERSION=1.0.0
 API_KEY=secret123
 ```
 
-### 8.5 Depends On & Health Checks
+## Depends On & Health Checks
 
 **Basic depends_on:**
 ```yaml
@@ -226,7 +236,7 @@ services:
       retries: 5
 ```
 
-### 8.6 Real-World Examples
+## Real-World Examples
 
 #### Full-Stack Web Application
 ```yaml

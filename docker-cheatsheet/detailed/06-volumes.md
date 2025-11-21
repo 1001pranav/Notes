@@ -1,5 +1,20 @@
 # Docker Volumes - Data Persistence (Detailed Guide)
 
+## Table of Contents
+- [Why Do We Need Volumes?](#why-do-we-need-volumes)
+- [Types of Data Storage](#types-of-data-storage)
+  - [Named Volumes](#1-named-volumes-recommended-for-production)
+  - [Bind Mounts](#2-bind-mounts-best-for-development)
+  - [Anonymous Volumes](#3-anonymous-volumes-temporary)
+  - [tmpfs Mounts](#4-tmpfs-mounts-memory-only)
+- [Creating and Managing Volumes](#creating-and-managing-volumes)
+- [Using Volumes with Containers](#using-volumes-with-containers)
+- [Read-Only Mounts](#read-only-mounts)
+- [Backup and Restore Volumes](#backup-and-restore-volumes)
+- [Volume Best Practices](#volume-best-practices)
+
+---
+
 ## Why Do We Need Volumes?
 
 **The Problem:**

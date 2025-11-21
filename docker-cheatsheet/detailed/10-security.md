@@ -1,5 +1,21 @@
 # Docker Security - Detailed Guide
 
+## Table of Contents
+- [Why Docker Security Matters](#why-docker-security-matters)
+- [Security Best Practices Explained](#security-best-practices-explained)
+  - [1. Use Official Images](#1-use-official-images)
+  - [2. Don't Run as Root](#2-dont-run-as-root)
+  - [3. Scan Images for Vulnerabilities](#3-scan-images-for-vulnerabilities)
+  - [4. Never Store Secrets in Images](#4-never-store-secrets-in-images)
+  - [5. Use Read-Only Filesystems](#5-use-read-only-filesystems)
+  - [6. Limit Container Capabilities](#6-limit-container-capabilities)
+  - [7. Set Resource Limits](#7-set-resource-limits)
+  - [8. Keep Docker Updated](#8-keep-docker-updated)
+- [Docker Secrets (Swarm Mode)](#docker-secrets-swarm-mode)
+- [Security Checklist](#security-checklist)
+
+---
+
 ## Why Docker Security Matters
 
 **The Risk:**

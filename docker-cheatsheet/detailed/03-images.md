@@ -1,5 +1,16 @@
 # Docker Images - Detailed Guide
 
+## Table of Contents
+- [What is a Docker Image?](#what-is-a-docker-image)
+- [Understanding Image Layers](#understanding-image-layers)
+- [Pulling Images](#pulling-images)
+- [Listing Images](#listing-images)
+- [Removing Images](#removing-images)
+- [Understanding Image Tags](#understanding-image-tags)
+- [Docker Hub](#docker-hub)
+
+---
+
 ## What is a Docker Image?
 
 **Simple Definition:**

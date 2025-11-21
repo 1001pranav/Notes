@@ -1,5 +1,21 @@
 # Docker Networking - Detailed Guide
 
+## Table of Contents
+- [What is Docker Networking?](#what-is-docker-networking)
+- [Network Types Explained](#network-types-explained)
+  - [Bridge Network](#1-bridge-network-default)
+  - [Host Network](#2-host-network)
+  - [None Network](#3-none-network)
+  - [Overlay Network](#4-overlay-network)
+- [Creating and Managing Networks](#creating-and-managing-networks)
+- [Connecting Containers](#connecting-containers)
+- [Port Mapping Explained](#port-mapping-explained)
+- [DNS in Docker](#dns-in-docker-container-discovery)
+- [Container Communication Example](#container-communication-example)
+- [Network Best Practices](#network-best-practices)
+
+---
+
 ## What is Docker Networking?
 
 **Simple Definition:**

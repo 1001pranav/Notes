@@ -1,5 +1,19 @@
 # Docker Registry - Detailed Guide
 
+## Table of Contents
+- [What is a Registry?](#what-is-a-registry)
+- [Types of Registries](#types-of-registries)
+- [Working with Docker Hub](#working-with-docker-hub)
+- [Cloud Provider Registries](#cloud-provider-registries)
+  - [AWS ECR](#aws-ecr-elastic-container-registry)
+  - [Google GCR](#google-gcr--artifact-registry)
+  - [Azure ACR](#azure-acr)
+  - [GitHub Container Registry](#github-container-registry)
+- [Self-Hosted Registry](#self-hosted-registry)
+- [Registry Best Practices](#registry-best-practices)
+
+---
+
 ## What is a Registry?
 
 **Simple Definition:**

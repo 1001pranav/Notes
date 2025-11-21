@@ -1,5 +1,17 @@
 # Docker Containers - Detailed Guide
 
+## Table of Contents
+- [What is a Container?](#what-is-a-container)
+- [Running Containers](#running-containers)
+  - [Understanding Run Options](#understanding-run-options)
+- [Container Lifecycle](#container-lifecycle)
+- [Managing Containers](#managing-containers)
+- [Container Logs](#container-logs)
+- [Executing Commands in Containers](#executing-commands-in-containers)
+- [Resource Limits](#resource-limits)
+
+---
+
 ## What is a Container?
 
 **Simple Definition:**

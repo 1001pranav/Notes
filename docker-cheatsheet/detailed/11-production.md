@@ -1,5 +1,23 @@
 # Docker in Production - Detailed Guide
 
+## Table of Contents
+- [What is Container Orchestration?](#what-is-container-orchestration)
+- [Docker Swarm Basics](#docker-swarm-basics)
+  - [What is Docker Swarm?](#what-is-docker-swarm)
+  - [Key Concepts](#key-concepts)
+  - [Basic Commands](#basic-commands)
+- [Kubernetes Overview](#kubernetes-overview)
+  - [What is Kubernetes?](#what-is-kubernetes)
+  - [Key Concepts](#key-concepts-1)
+  - [When to Use What?](#when-to-use-what)
+- [CI/CD with Docker](#cicd-with-docker)
+  - [GitHub Actions Example](#github-actions-example)
+  - [GitLab CI Example](#gitlab-ci-example)
+- [Logging & Monitoring](#logging--monitoring)
+- [Production Checklist](#production-checklist)
+
+---
+
 ## What is Container Orchestration?
 
 **Simple Definition:**
