@@ -1,3 +1,9 @@
+[Installation & Setup](#2-installation--setup)
+   - 2.1 [Installing Docker on Linux](#21-installing-docker-on-linux)
+   - 2.2 [Installing Docker on Windows/Mac](#22-installing-docker-on-windowsmac)
+   - 2.3 [Verify Installation](#23-verify-installation)
+   - 2.4 [Post-Installation Steps](#24-post-installation-steps)
+
 ## 2. Installation & Setup
 
 ### 2.1 Installing Docker on Linux
