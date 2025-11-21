@@ -1,3 +1,11 @@
+[Dockerfile - Building Custom Images](#5-dockerfile---building-custom-images)
+   - 5.1 [What is a Dockerfile?](#51-what-is-a-dockerfile)
+   - 5.2 [Dockerfile Instructions](#52-dockerfile-instructions)
+   - 5.3 [Building Images](#53-building-images)
+   - 5.4 [Best Practices](#54-best-practices)
+   - 5.5 [Multi-Stage Builds](#55-multi-stage-builds)
+   - 5.6 [.dockerignore File](#56-dockerignore-file)
+
 ## 5. Dockerfile - Building Custom Images
 
 ### 5.1 What is a Dockerfile?
