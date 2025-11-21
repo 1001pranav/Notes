@@ -2,25 +2,21 @@
 
 In-depth Docker documentation with explanations of **what**, **why**, and **how**.
 
-## Content
+## Files
 
 | File | Topics |
 |------|--------|
-| [DOCKER.md](DOCKER.md) | Complete beginner-to-expert guide |
+| [01-introduction.md](01-introduction.md) | What is Docker, Why use it, Docker vs VMs, Architecture |
+| [02-installation.md](02-installation.md) | Linux, Windows, Mac installation |
+| [03-images.md](03-images.md) | Image layers, pulling, tagging, Docker Hub |
+| [04-containers.md](04-containers.md) | Lifecycle, management, logs, exec, resource limits |
+| [05-dockerfile.md](05-dockerfile.md) | All instructions, best practices, multi-stage builds |
+| [06-volumes.md](06-volumes.md) | Data persistence, types, backup strategies |
+| [07-networking.md](07-networking.md) | Network types, DNS, container communication |
+| [08-compose.md](08-compose.md) | Multi-container apps, real-world examples |
+| [09-registry.md](09-registry.md) | Docker Hub, private registries |
+| [10-security.md](10-security.md) | Best practices, non-root, secrets |
+| [11-production.md](11-production.md) | Swarm, Kubernetes, CI/CD, monitoring |
+| [12-troubleshooting.md](12-troubleshooting.md) | Common issues, cheatsheet, performance |
 
-## Topics Covered
-
-1. **Introduction** - What is Docker, Why use it, Docker vs VMs, Architecture
-2. **Installation** - Linux, Windows, Mac setup
-3. **Images** - Understanding layers, pulling, tagging
-4. **Containers** - Lifecycle, management, resource limits
-5. **Dockerfile** - All instructions explained, best practices, multi-stage builds
-6. **Volumes** - Data persistence, types, backup strategies
-7. **Networking** - Network types, DNS, container communication
-8. **Docker Compose** - Multi-container applications, real-world examples
-9. **Registry** - Docker Hub, private registries
-10. **Security** - Best practices, non-root users, secrets
-11. **Production** - Swarm, Kubernetes overview, CI/CD
-12. **Troubleshooting** - Common issues, performance tips
-
-For quick command reference, see the `../simple/` folder.
+For quick command reference, see `../simple/DOCKER_CHEATSHEET.md`

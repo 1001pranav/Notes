@@ -6,32 +6,27 @@ Complete Docker documentation from beginner to expert level.
 
 ```
 docker-cheatsheet/
-├── simple/           # Quick reference (commands only)
-│   ├── 01-images.md
-│   ├── 02-containers.md
-│   ├── 03-dockerfile.md
-│   ├── 04-volumes.md
-│   ├── 05-networking.md
-│   ├── 06-compose.md
-│   └── 07-cleanup.md
+├── simple/                    # Single-page quick reference
+│   └── DOCKER_CHEATSHEET.md   # All commands in one file
 │
-└── detailed/         # In-depth explanations (what, why, how)
-    └── DOCKER.md     # Complete guide with diagrams & examples
+└── detailed/                  # In-depth explanations (split by topic)
+    ├── 01-introduction.md
+    ├── 02-installation.md
+    ├── 03-images.md
+    ├── 04-containers.md
+    ├── 05-dockerfile.md
+    ├── 06-volumes.md
+    ├── 07-networking.md
+    ├── 08-compose.md
+    ├── 09-registry.md
+    ├── 10-security.md
+    ├── 11-production.md
+    └── 12-troubleshooting.md
 ```
 
 ## Which to Use?
 
 | Folder | Use When |
 |--------|----------|
-| **simple/** | You know Docker, need quick command reference |
-| **detailed/** | Learning Docker, need to understand concepts |
-
-## Quick Start
-
-```bash
-# Run a container
-docker run -d -p 80:80 nginx
-
-# Using Docker Compose
-docker compose up -d
-```
+| **simple/** | Need quick command lookup (one file) |
+| **detailed/** | Learning Docker, need explanations (multiple files by topic) |
